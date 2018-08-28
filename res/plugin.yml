@@ -6,8 +6,16 @@ author: "R26"
 depend:
     - Citizens
 commands:
-    cannonteam:
-        usage: Usage: /<command>
+    cannon:
+        usage: |
+            Usage: /<command> <cmd>
+            cmd:
+                setspawn <team> 設定隊伍的出生點
+                removespawn <team> 移除隊伍的出生點
+                clearspawn 清除所有隊伍的出生點
+                addcannon 新增砲點
+                undocannon 移除上一個砲點
+                clearcannon 清除所有砲點
         permission: cannon.set
 permissions:
     cannon.set:
