@@ -1,0 +1,14 @@
+name: "Cannon"
+main: tw.mayortw.cannon.CannonPlugin
+version: 0.1
+description: "大砲"
+author: "R26"
+depend:
+    - Citizens
+commands:
+    cannonteam:
+        usage: Usage: /<command>
+        permission: cannon.set
+permissions:
+    cannon.set:
+        default: op
