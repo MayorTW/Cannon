@@ -1,36 +1,63 @@
 package tw.mayortw.cannon;
 
+import tw.mayortw.cannon.util.LocationManager;
+
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Structure {
 
-    private static final String FILE_PATH = "canon.yml";
+    public static final String FILE_PATH = "cannon.yml";
 
-    private File file;
-    private YamlConfiguration data;
+    private static List<BlockInfo> blocks = new ArrayList<>();
+    private static Location playerPos;
 
-    public Structure(Plugin plugin) {
+    public static void init(Plugin plugin) {
 
-        file = new File(plugin.getDataFolder(), FILE_PATH);
+        YamlConfiguration data = null;
+        File file = new File(plugin.getDataFolder(), FILE_PATH);
 
         try {
             data = YamlConfiguration.loadConfiguration(file);
-        } catch(IllegalArgumentException e) { }
+        } catch(IllegalArgumentException e) {}
 
-        if(data == null)
-            plugin.getLogger().severe("Cannot load cannon data");
-        else {
+        playerPos = (Location) data.get("playerPos");
+
+        @SuppressWarnings("unchecked")
+        List<BlockInfo> blockInfo = (List<BlockInfo>) data.getList("blocks");
+        if(blockInfo != null) {
+            for(BlockInfo block : blockInfo) {
+                blocks.add(block);
+            }
         }
     }
 
-    public void setBlocks(Location pos, Vector dir) {
+    public static void setBlocks(Location pos, Vector dir) {
+        for(BlockInfo block : blocks) {
+            block.setBlock(pos.clone().add(.5, 0, .5).setDirection(dir));
+        }
     }
 
-    public void clearBlocks(Location pos) {
+    public static void clearBlocks(Location pos, Vector dir) {
+        if(dir == null) return;
+        for(BlockInfo block : blocks) {
+            block.clearBlock(pos.clone().add(.5, 0, .5).setDirection(dir));
+        }
+    }
+
+    public static Location getPlayerPos(Location pos) {
+        return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5), playerPos.clone());
     }
 }

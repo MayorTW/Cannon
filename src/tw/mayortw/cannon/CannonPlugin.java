@@ -1,11 +1,17 @@
 package tw.mayortw.cannon;
 
+import tw.mayortw.cannon.util.LocationManager;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.Location;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,11 +25,14 @@ import java.util.HashSet;
 
 public class CannonPlugin extends JavaPlugin implements Listener {
 
-    private Structure struct;
     private Map<CommandSender, String> spawnSettingPlayers = new HashMap<>();
     private Set<CommandSender> cannonSettingPlayers = new HashSet<>();
 
+    private List<Cannon> cannons;
+    private ConfigurationSection spawns;
+
     @Override
+    @SuppressWarnings("unchecked")
     public void onEnable() {
         if(getServer().getPluginManager().getPlugin("Citizens") == null || getServer().getPluginManager().getPlugin("Citizens").isEnabled() == false) {
             getLogger().severe("Citizens 2.0 not found or not enabled");
@@ -32,8 +41,13 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         }
 
         getServer().getPluginManager().registerEvents(this, this);
+        ConfigurationSerialization.registerClass(Cannon.class);
+        ConfigurationSerialization.registerClass(BlockInfo.class);
+        saveResource(Structure.FILE_PATH, false);
 
-        struct = new Structure(this);
+        Structure.init(this);
+        spawns = getConfig().getConfigurationSection("spawns");
+        cannons = (List<Cannon>) getConfig().getList("cannons");
     }
 
     @Override
@@ -75,7 +89,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                     sender.sendMessage("清除所有砲點");
                     break;
                 case "undocannon":
-                    Location removed = undoCannon();
+                    Location removed = undoCannon().getLocation();
                     if(removed != null) {
                         sender.sendMessage("已移除砲點 x:"
                                 + removed.getBlockX() + ", y:" + removed.getBlockY() + ", z:" + removed.getBlockZ());
@@ -95,47 +109,86 @@ public class CannonPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent eve) {
         Player player = eve.getPlayer();
-        Location pos = eve.getClickedBlock().getLocation();
+        Action action = eve.getAction();
 
-        if(spawnSettingPlayers.containsKey(player)) {
-            String team = spawnSettingPlayers.get(player);
-            addSpawn(pos, team);
-            player.sendMessage(team + " 隊出生點已設成 x:"
-                    + pos.getBlockX() + ", y:" + pos.getBlockY() + ", z:" + pos.getBlockZ());
-            spawnSettingPlayers.remove(player);
-        } else if(cannonSettingPlayers.contains(player)) {
-            addCannon(pos);
-            player.sendMessage("x:" + pos.getBlockX() + ", y:" + pos.getBlockY() + ", z:" + pos.getBlockZ() +
-                    " 已成為砲點");
-            cannonSettingPlayers.remove(player);
-        } else {
-            struct.setBlocks(pos, player.getEyeLocation().getDirection());
+        if(action != Action.PHYSICAL) {
+            Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
+            if(cannon != null) {
+                ItemStack itemInHand = player.getInventory().getItemInMainHand();
+                if(Cannon.fireItem.equals(itemInHand)) {
+                    // Fire cannon
+                    cannon.fire();
+                    eve.setCancelled(true);
+                    return;
+                } else if(Cannon.exitItem.equals(itemInHand)) {
+                    // Exit cannon
+                    cannon.deactivate();
+                    eve.setCancelled(true);
+                    return;
+                }
+            }
+        }
+
+        if(action == Action.RIGHT_CLICK_BLOCK) {
+            Location pos = eve.getClickedBlock().getLocation();
+
+            if(spawnSettingPlayers.containsKey(player)) {
+                String team = spawnSettingPlayers.get(player);
+                addSpawn(pos, team);
+                player.sendMessage(team + " 隊出生點已設成 " + LocationManager.toString(pos));
+                spawnSettingPlayers.remove(player);
+                eve.setCancelled(true);
+            } else if(cannonSettingPlayers.contains(player)) {
+                addCannon(new Cannon(pos));
+                player.sendMessage(LocationManager.toString(pos) + " 已成為砲點");
+                cannonSettingPlayers.remove(player);
+                eve.setCancelled(true);
+            } else {
+                Cannon cannon = cannons.stream().filter(c -> pos.equals(c.getLocation())).findFirst().orElse(null);
+                if(cannon != null) {
+                    cannon.activate(player);
+                    eve.setCancelled(true);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent eve) {
+        if(cannons != null) {
+            Player player = eve.getPlayer();
+            Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
+            if(cannon != null) {
+                Location from = eve.getFrom();
+                Location to = eve.getTo();
+                if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
+                    player.setAllowFlight(true);
+                    player.setFlying(true);
+                    eve.setCancelled(true);
+                } else {
+                    cannon.updateStructure();
+                }
+            }
         }
     }
 
     private void addSpawn(Location pos, String team) {
-        ConfigurationSection spawns = getConfig().getConfigurationSection("spawns");
         if(spawns == null) {
             spawns = getConfig().createSection("spawns");
         }
         spawns.set(team.replaceAll("\\.", "_"), pos);
     }
 
-    private void addCannon(Location pos) {
-        List<Location> cannons = (List<Location>) getConfig().getList("cannons");
+    private void addCannon(Cannon cannon) {
         if(cannons == null) {
             cannons = new ArrayList<>();
             getConfig().set("cannons", cannons);
         }
-        cannons.add(pos);
+        cannons.add(cannon);
     }
 
-    private Location undoCannon() {
-        List<Location> cannons = (List<Location>) getConfig().getList("cannons");
-        if(cannons == null) {
-            cannons = new ArrayList<>();
-            getConfig().set("cannons", cannons);
-        }
-        return cannons.isEmpty() ? null : cannons.remove(cannons.size() - 1);
+    private Cannon undoCannon() {
+        return cannons == null || cannons.isEmpty() ?  null :
+            cannons.remove(cannons.size() - 1);
     }
 }
