@@ -9,9 +9,12 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.Location;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -131,6 +134,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
         if(action == Action.RIGHT_CLICK_BLOCK) {
             Location pos = eve.getClickedBlock().getLocation();
+            //player.sendBlockChange(player.getLocation(), org.bukkit.Material.BARRIER, (byte) 0);
 
             if(spawnSettingPlayers.containsKey(player)) {
                 String team = spawnSettingPlayers.get(player);
@@ -171,6 +175,24 @@ public class CannonPlugin extends JavaPlugin implements Listener {
             }
         }
     }
+
+	@EventHandler
+	public void onPlayerQuit(PlayerQuitEvent eve) {
+        Player player = eve.getPlayer();
+        Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
+        if(cannon != null) {
+            cannon.deactivate();
+        }
+	}
+
+	@EventHandler(priority = EventPriority.HIGH)
+	public void onPlayerDeath(PlayerDeathEvent eve) {
+        Player player = eve.getEntity();
+        Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
+        if(cannon != null) {
+            cannon.deactivate();
+        }
+	}
 
     private void addSpawn(Location pos, String team) {
         if(spawns == null) {

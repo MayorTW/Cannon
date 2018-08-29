@@ -5,6 +5,7 @@ import tw.mayortw.cannon.util.LocationManager;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
@@ -23,6 +24,8 @@ public class Structure {
 
     private static List<BlockInfo> blocks = new ArrayList<>();
     private static Location playerPos;
+    private static Location firePos;
+    private static int cooldown;
 
     public static void init(Plugin plugin) {
 
@@ -34,19 +37,27 @@ public class Structure {
         } catch(IllegalArgumentException e) {}
 
         playerPos = (Location) data.get("playerPos");
+        firePos = (Location) data.get("firePos");
+        cooldown = data.getInt("cooldown");
 
         @SuppressWarnings("unchecked")
         List<BlockInfo> blockInfo = (List<BlockInfo>) data.getList("blocks");
         if(blockInfo != null) {
             for(BlockInfo block : blockInfo) {
-                blocks.add(block);
+                if(block != null)
+                    blocks.add(block);
             }
         }
     }
 
-    public static void setBlocks(Location pos, Vector dir) {
+    public static void setBlocks(Location pos, Vector dir/*, Player hideFrom*/) {
         for(BlockInfo block : blocks) {
-            block.setBlock(pos.clone().add(.5, 0, .5).setDirection(dir));
+            Location to = pos.clone().add(.5, 0, .5).setDirection(dir);
+            block.setBlock(to);
+            /*
+            if(hideFrom != null)
+                block.hideFromPlayer(to, hideFrom);
+                */
         }
     }
 
@@ -59,5 +70,13 @@ public class Structure {
 
     public static Location getPlayerPos(Location pos) {
         return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5), playerPos.clone());
+    }
+
+    public static Location getFirePos(Location pos, Vector dir) {
+        return LocationManager.getGlobalPos(pos.clone().add(.5, .5, .5).setDirection(dir), firePos.clone());
+    }
+
+    public static int getCooldown() {
+        return cooldown;
     }
 }
