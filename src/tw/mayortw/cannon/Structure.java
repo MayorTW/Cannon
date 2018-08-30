@@ -26,6 +26,7 @@ public class Structure {
     private static Location playerPos;
     private static Location firePos;
     private static int cooldown;
+    private static int damage;
 
     public static void init(Plugin plugin) {
 
@@ -39,6 +40,7 @@ public class Structure {
         playerPos = (Location) data.get("playerPos");
         firePos = (Location) data.get("firePos");
         cooldown = data.getInt("cooldown");
+        damage = data.getInt("damage");
 
         @SuppressWarnings("unchecked")
         List<BlockInfo> blockInfo = (List<BlockInfo>) data.getList("blocks");
@@ -78,5 +80,9 @@ public class Structure {
 
     public static int getCooldown() {
         return cooldown;
+    }
+
+    public static int getDamage() {
+        return damage;
     }
 }

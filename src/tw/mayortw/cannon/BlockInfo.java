@@ -40,7 +40,7 @@ public class BlockInfo implements ConfigurationSerializable {
     /*
     public void hideFromPlayer(Location to, Player player) {
         if(pos != null) {
-            Bukkit.getScheduler().runTaskLaterAsynchronously(org.bukkit.plugin.java.JavaPlugin.getPlugin(CannonPlugin.class) , () -> player.sendBlockChange(LocationManager.getGlobalPos(to, pos), Material.AIR, (byte) 0), 0);
+            Bukkit.getScheduler().runTaskLaterAsynchronously(CannonPlugin.plugin , () -> player.sendBlockChange(LocationManager.getGlobalPos(to, pos), Material.AIR, (byte) 0), 0);
         }
     }
     */
