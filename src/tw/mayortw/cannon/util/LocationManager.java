@@ -1,3 +1,8 @@
+/*
+ * BukkitManager.java
+ *
+ * Copied and edited from dianlemel's SpaceWar plugin
+ */
 package tw.mayortw.cannon.util;
 
 import org.bukkit.Location;

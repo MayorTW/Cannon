@@ -1,3 +1,8 @@
+/*
+ * BukkitManager.java
+ *
+ * Copied from dianlemel's SpaceWar plugin
+ */
 package tw.mayortw.cannon.util;
 
 import java.util.Map;

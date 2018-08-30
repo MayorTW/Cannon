@@ -1,3 +1,9 @@
+/*
+ * Cannon.java
+ *
+ * Some code are copied from dianlemel's SpaceWar plugin
+ */
+
 package tw.mayortw.cannon;
 
 import tw.mayortw.cannon.util.BukkitManager;
@@ -31,6 +37,7 @@ import java.util.Map;
 
 public class Cannon implements ConfigurationSerializable {
 
+    // Items used for controls
     public static ItemStack fireItem = new ItemStack(Material.DIAMOND_SWORD);
     public static ItemStack exitItem = new ItemStack(Material.DIAMOND_BOOTS);
 
@@ -43,13 +50,15 @@ public class Cannon implements ConfigurationSerializable {
         exitItem.setItemMeta(itemMeta);
     }
 
-    private Location pos;
     private Player player;
     private NPC npc;
     private Map<Integer, ItemStack> inv = new HashMap<>();
+
+    private Location pos;
     private Vector lastDir;
     private long lastFired = 0;
 
+    // Getters and setters
     public Cannon(Location pos) {
         this.pos = pos;
     }
@@ -66,24 +75,28 @@ public class Cannon implements ConfigurationSerializable {
         return player;
     }
 
+    // Activates cannon
+    // Hide player and teleport them
+    // Set their inventory to actoin items
+    // Create a clone using NPC
+    // And build cannon structure
     @SuppressWarnings("deprecation")
     public void activate(Player player) {
         if(this.player != null)
             return;
 
         this.player = player;
+
         Vector dir = player.getLocation().getDirection();
 
+        // Hide player
         Bukkit.getOnlinePlayers().forEach(p -> p.hidePlayer(player));
         player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 999999, 1, false, false));
         player.sendMessage(ChatColor.GOLD.toString() + ChatColor.BOLD + "劍為射擊、鞋子為離開");
-        player.setAllowFlight(true);
-        player.setFlying(true);
-
-        BukkitManager.sendPacket(player, new PacketPlayOutHeldItemSlot(0));
 
         PlayerInventory inv = player.getInventory();
 
+        // Setup NPC clone
         npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, player.getName());
         npc.spawn(player.getLocation());
         npc.setProtected(false);
@@ -97,6 +110,8 @@ public class Cannon implements ConfigurationSerializable {
         ((Player)npc.getEntity()).setMaxHealth(player.getMaxHealth());
         ((Player)npc.getEntity()).setHealth(player.getHealth());
 
+        // Set player inventory
+        BukkitManager.sendPacket(player, new PacketPlayOutHeldItemSlot(0));
         this.inv.clear();
         for (int i = 0; i < 36; i++) {
             ItemStack item = inv.getItem(i);
@@ -109,20 +124,29 @@ public class Cannon implements ConfigurationSerializable {
         inv.setItem(0, fireItem);
         inv.setItem(8, exitItem);
 
+        // Move player
         player.teleport(Structure.getPlayerPos(pos, dir)
                 .setDirection(dir));
+        player.setAllowFlight(true);
+        player.setFlying(true);
 
+        // Build structure
         updateStructure();
     }
 
+    // Deactivate cannon
+    //
     @SuppressWarnings("deprecation")
     public void deactivate(boolean isDie) {
         if(player == null) return;
+
+        // Unhide and un-fly player
         player.setAllowFlight(false);
         player.setFlying(false);
         player.removePotionEffect(PotionEffectType.INVISIBILITY);
         Bukkit.getOnlinePlayers().forEach(p -> p.showPlayer(player));
 
+        // Class to destroy NPC with scheduler
         class DestroyNPC implements Runnable {
             private NPC npc;
             DestroyNPC(NPC npc) {
@@ -142,15 +166,21 @@ public class Cannon implements ConfigurationSerializable {
                 npcPos.getWorld().dropItem(npcPos, v);
             });
 
+            // Strip NPC
             npc.getTrait(Equipment.class).set(EquipmentSlot.HELMET, null);
             npc.getTrait(Equipment.class).set(EquipmentSlot.CHESTPLATE, null);
             npc.getTrait(Equipment.class).set(EquipmentSlot.LEGGINGS, null);
             npc.getTrait(Equipment.class).set(EquipmentSlot.BOOTS, null);
             npc.getTrait(Equipment.class).set(EquipmentSlot.HAND, null);
             npc.getTrait(Equipment.class).set(EquipmentSlot.OFF_HAND, null);
+
+            // Dying animation
             BukkitManager.broadcastEntityEffect(npc.getEntity(), 3);
+
+            // Destroy NPC later
             Bukkit.getScheduler().runTaskLater(CannonPlugin.plugin, new DestroyNPC(npc), 20);
         } else {
+            // Give player their inventory back
             PlayerInventory inv = player.getInventory();
             for (int i = 0; i < 36; i++) {
                 inv.setItem(i, null);
@@ -160,13 +190,16 @@ public class Cannon implements ConfigurationSerializable {
             });
             this.inv.clear();
 
+            // Teleport player to NPC and destroy NPC
             player.teleport(npcPos);
             npc.destroy();
         }
-        npc = null;
 
+        // Remove cannon structure
         Structure.clearBlocks(pos, lastDir);
+
         player = null;
+        npc = null;
         lastDir = null;
     }
 
@@ -174,6 +207,7 @@ public class Cannon implements ConfigurationSerializable {
         long now = System.currentTimeMillis();
         if(now - lastFired > Structure.getCooldown() * 1000) {
             Location from = Structure.getFirePos(pos, lastDir);
+            // Aim at where the player's looking at
             Location to = player.getTargetBlock(null, 150).getLocation();
             Vector toward = to.distanceSquared(from) > 9 ?
                 to.toVector().subtract(from.toVector()).normalize() :
@@ -189,6 +223,9 @@ public class Cannon implements ConfigurationSerializable {
         }
     }
 
+    // Move player if neccesory
+    // Remove old structure
+    // Build new structure
     public void updateStructure() {
         Vector dir = player.getLocation().getDirection();
 
@@ -221,17 +258,5 @@ public class Cannon implements ConfigurationSerializable {
     @Override
     public Map<String, Object> serialize() {
         return pos.serialize();
-    }
-
-    // For in List.contains
-
-    @Override
-    public boolean equals(Object o) {
-        if(o instanceof Location)
-            return this.pos == null ? pos == null : this.pos.equals(o);
-        else if(o instanceof Player)
-            return this.player == null ? player == null : this.player.equals(o);
-        else
-            return super.equals(o);
     }
 }

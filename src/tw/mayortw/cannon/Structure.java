@@ -1,3 +1,7 @@
+/*
+ * Structure.java
+ */
+
 package tw.mayortw.cannon;
 
 import tw.mayortw.cannon.util.LocationManager;
@@ -18,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// Loads info about cannon structure
+// includes block position, player position, cannon damage, cannon cooldown
 public class Structure {
 
     public static final String FILE_PATH = "cannon.yml";
@@ -30,18 +36,21 @@ public class Structure {
 
     public static void init(Plugin plugin) {
 
+        // Load the file
         YamlConfiguration data = null;
         File file = new File(plugin.getDataFolder(), FILE_PATH);
 
         try {
             data = YamlConfiguration.loadConfiguration(file);
-        } catch(IllegalArgumentException e) {}
+        } catch(IllegalArgumentException e) {} // Only thrown if file is null
 
+        // Load datas
         playerPos = (Location) data.get("playerPos");
         firePos = (Location) data.get("firePos");
         cooldown = data.getInt("cooldown");
         damage = data.getInt("damage");
 
+        // Load blocks
         @SuppressWarnings("unchecked")
         List<BlockInfo> blockInfo = (List<BlockInfo>) data.getList("blocks");
         if(blockInfo != null) {
@@ -59,7 +68,7 @@ public class Structure {
             /*
             if(hideFrom != null)
                 block.hideFromPlayer(to, hideFrom);
-                */
+            */
         }
     }
 
@@ -70,6 +79,7 @@ public class Structure {
         }
     }
 
+    // Setters and getters
     public static Location getPlayerPos(Location pos, Vector dir) {
         return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5).setDirection(dir), playerPos.clone());
     }

@@ -1,3 +1,7 @@
+/*
+ * BlockInfo.java
+ */
+
 package tw.mayortw.cannon;
 
 import tw.mayortw.cannon.util.LocationManager;
@@ -13,6 +17,8 @@ import org.bukkit.Material;
 import java.util.HashMap;
 import java.util.Map;
 
+// A class to serialize blocks
+// Location is local coordinate
 public class BlockInfo implements ConfigurationSerializable {
 
     private Location pos;

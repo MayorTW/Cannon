@@ -1,3 +1,9 @@
+/*
+ * CannonPlugin.java
+ *
+ * Some code are copied from dianlemel's SpaceWar plugin
+ */
+
 package tw.mayortw.cannon;
 
 import tw.mayortw.cannon.util.BukkitManager;
@@ -44,8 +50,9 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
     public static JavaPlugin plugin;
 
+    // Add player to team when they get into this range of the spawn
     private static final int SPAWN_RANGE = 3;
-    private static final String CLEAR_TEAM = "_clear_";
+    private static final String CLEAR_TEAM = "_clear_"; // Config key to save team reset location
 
     private Map<CommandSender, String> spawnSettingPlayers = new HashMap<>();
     private Set<CommandSender> cannonSettingPlayers = new HashSet<>();
@@ -58,17 +65,20 @@ public class CannonPlugin extends JavaPlugin implements Listener {
     @Override
     @SuppressWarnings("unchecked")
     public void onEnable() {
+        // Check citizen
         if(getServer().getPluginManager().getPlugin("Citizens") == null || getServer().getPluginManager().getPlugin("Citizens").isEnabled() == false) {
             getLogger().severe("Citizens 2.0 not found or not enabled");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
 
+        // Register and save default resource
         getServer().getPluginManager().registerEvents(this, this);
         ConfigurationSerialization.registerClass(Cannon.class);
         ConfigurationSerialization.registerClass(BlockInfo.class);
         saveResource(Structure.FILE_PATH, false);
 
+        // Init variables
         Structure.init(this);
         CannonPlugin.plugin = this;
         spawns = getConfig().getConfigurationSection("spawns");
@@ -88,7 +98,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                     String team;
                     if(args.length < 2) {
                         team = CLEAR_TEAM;
-                        sender.sendMessage("對隊伍重設點重設點的方塊按右鍵");
+                        sender.sendMessage("對隊伍重設點的方塊按右鍵");
                     } else {
                         team = args[1];
                         sender.sendMessage("對 " + team + " 隊出生點的方塊按右鍵");
@@ -155,6 +165,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         Player player = eve.getPlayer();
         Action action = eve.getAction();
 
+        // Cannon controls
         if(action != Action.PHYSICAL) {
             Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
             if(cannon != null) {
@@ -175,8 +186,8 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
         if(action == Action.RIGHT_CLICK_BLOCK) {
             Location pos = eve.getClickedBlock().getLocation();
-            //player.sendBlockChange(player.getLocation(), org.bukkit.Material.BARRIER, (byte) 0);
 
+            // Spawn and cannon location setup
             if(spawnSettingPlayers.containsKey(player)) {
                 String team = spawnSettingPlayers.get(player);
                 addSpawn(pos, team);
@@ -188,7 +199,9 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                 player.sendMessage(LocationManager.toString(pos) + " 已成為砲點");
                 cannonSettingPlayers.remove(player);
                 eve.setCancelled(true);
+
             } else {
+                // Activate cannon
                 Cannon cannon = cannons.stream().filter(c -> pos.equals(c.getLocation())).findFirst().orElse(null);
                 if(cannon != null) {
                     cannon.activate(player);
@@ -202,6 +215,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
     public void onPlayerMove(PlayerMoveEvent eve) {
         Player player = eve.getPlayer();
 
+        // Update cannon structure if player's on one
         if(cannons != null) {
             Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
             if(cannon != null) {
@@ -210,6 +224,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         }
 
         if(!teams.containsKey(player)) {
+            // Add player to team
             for(String team : spawns.getKeys(false)) {
                 if(team.equals(CLEAR_TEAM)) continue;
                 Location spawn = (Location) spawns.get(team);
@@ -218,6 +233,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                 }
             }
         } else if(spawns.contains(CLEAR_TEAM)) {
+            // Remove player from team
             Location clearPos = (Location) spawns.get(CLEAR_TEAM);
             if(clearPos.distanceSquared(player.getLocation()) < SPAWN_RANGE * SPAWN_RANGE) {
                 teams.remove(player);
@@ -227,6 +243,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent eve) {
+        // Deactivate cannon when the player controlling quits
         Player player = eve.getPlayer();
         Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
         if(cannon != null) {
@@ -236,6 +253,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerDeath(PlayerDeathEvent eve) {
+        // Deactivate cannon when the player controlling dies
         Player player = eve.getEntity();
         Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
         if(cannon != null) {
@@ -285,16 +303,19 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         Entity damager = eve.getDamager();
         Entity target = eve.getEntity();
         if(damager.getType() == EntityType.FIREBALL) {
+            // Cannon damage
             ProjectileSource shooter = ((Projectile) damager).getShooter();
 
             if(shooter instanceof Player) {
                 if(teams.containsKey(shooter) && teams.get(shooter).equals(teams.get(target))) {
+                    // Ignore same-team damage
                     eve.setCancelled(true);
                 } else {
                     eve.setDamage(Structure.getDamage());
                 }
             }
         } else if(teams.containsKey(damager) && teams.get(damager).equals(teams.get(target))) {
+            // Ignore same-team damage
             eve.setCancelled(true);
         }
     }
