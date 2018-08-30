@@ -24,6 +24,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.Location;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.projectiles.ProjectileSource;
 
 import net.citizensnpcs.api.event.NPCDamageByEntityEvent;
 import net.citizensnpcs.api.event.NPCDeathEvent;
@@ -43,11 +44,16 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
     public static JavaPlugin plugin;
 
+    private static final int SPAWN_RANGE = 3;
+    private static final String CLEAR_TEAM = "_clear_";
+
     private Map<CommandSender, String> spawnSettingPlayers = new HashMap<>();
     private Set<CommandSender> cannonSettingPlayers = new HashSet<>();
 
     private List<Cannon> cannons;
     private ConfigurationSection spawns;
+
+    private Map<Player, String> teams = new HashMap<>();
 
     @Override
     @SuppressWarnings("unchecked")
@@ -79,10 +85,16 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         if(cmd.getName().equalsIgnoreCase("cannon") && args.length > 0) {
             switch(args[0].toLowerCase()) {
                 case "setspawn":
-                    if(args.length < 2) return false;
-                    sender.sendMessage("對 " + args[1] + " 隊出生點的方塊按右鍵");
+                    String team;
+                    if(args.length < 2) {
+                        team = CLEAR_TEAM;
+                        sender.sendMessage("對隊伍重設點重設點的方塊按右鍵");
+                    } else {
+                        team = args[1];
+                        sender.sendMessage("對 " + team + " 隊出生點的方塊按右鍵");
+                    }
                     cannonSettingPlayers.remove(sender);
-                    spawnSettingPlayers.put(sender, args[1].toLowerCase());
+                    spawnSettingPlayers.put(sender, team);
                     break;
                 case "removespawn":
                     if(args.length < 2) return false;
@@ -115,6 +127,19 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                     } else {
                         sender.sendMessage("已經沒有砲點了");
                     }
+                    break;
+                case "setteam":
+                    if(args.length < 3) return false;
+                    @SuppressWarnings("deprecation")
+                    Player player = Bukkit.getPlayer(args[1]);
+                    if(player != null) {
+                        teams.put(player, args[2]);
+                        sender.sendMessage(player.getName() + " 已加入 " + args[2] + " 隊");
+                    }
+                    break;
+                case "resetteam":
+                    teams.clear();
+                    sender.sendMessage("已重置隊伍");
                     break;
                 default:
                     return false;
@@ -175,20 +200,27 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent eve) {
+        Player player = eve.getPlayer();
+
         if(cannons != null) {
-            Player player = eve.getPlayer();
             Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
             if(cannon != null) {
-                Location from = eve.getFrom();
-                Location to = eve.getTo();
-                /*
-                if(from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
-                    player.setAllowFlight(true);
-                    player.setFlying(true);
-                    eve.setCancelled(true);
-                }
-                */
                 cannon.updateStructure();
+            }
+        }
+
+        if(!teams.containsKey(player)) {
+            for(String team : spawns.getKeys(false)) {
+                if(team.equals(CLEAR_TEAM)) continue;
+                Location spawn = (Location) spawns.get(team);
+                if(spawn.distanceSquared(player.getLocation()) < SPAWN_RANGE * SPAWN_RANGE) {
+                    teams.put(player, team);
+                }
+            }
+        } else if(spawns.contains(CLEAR_TEAM)) {
+            Location clearPos = (Location) spawns.get(CLEAR_TEAM);
+            if(clearPos.distanceSquared(player.getLocation()) < SPAWN_RANGE * SPAWN_RANGE) {
+                teams.remove(player);
             }
         }
     }
@@ -225,65 +257,16 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         Entity attacker = BukkitManager.getDamager(eve.getDamager());
         if(attacker == null) return;
 
-        /*
-        if(defenseData.getTeam().equals(attackerData.getTeam())) {
-            attackerData.sendMessage(ChatColor.RED.toString() + ChatColor.BOLD + defense.getName() + " 是你的盟友，你無法傷害她");
+        eve.setCancelled(true);
+
+        if(teams.containsKey(attacker) &&
+                teams.get(attacker).equals(teams.get(target)))
             return;
-        }
-        */
 
         NPC npc = eve.getNPC();
         BukkitManager.broadcastEntityEffect(npc.getEntity(), 2);
 
-        /*
-        double damage = eve.getDamage();
-        DamageSource damageSource = null;
-        if(eve.getDamager() instanceof Player) {
-            EntityPlayer attackerEP = BukkitManager.getNMSPlayer((Player) eve.getDamager());
-            damageSource = DamageSource.playerAttack(attackerEP);
-        } else if(eve.getDamager() instanceof Projectile && eve.getDamager() instanceof CraftArrow) {
-            LivingEntity shooter = (LivingEntity) ((Projectile) eve.getDamager()).getShooter();
-            if(shooter.getType().equals(EntityType.PLAYER)) {
-                EntityArrow attackerEA = ((CraftArrow) eve.getDamager()).getHandle();
-                EntityPlayer attackerEP = BukkitManager.getNMSPlayer((Player) shooter);
-                damageSource = DamageSource.arrow(attackerEA, attackerEP);
-            }
-        } else if(eve.getDamager() instanceof CraftTNTPrimed) {
-            CraftTNTPrimed craftTNTPrimed = (CraftTNTPrimed) eve.getDamager();
-            if(craftTNTPrimed.getSource() != null && craftTNTPrimed.getSource().getType().equals(EntityType.PLAYER)) {
-                damageSource = BukkitManager.createExplosionDamageSource((Player) craftTNTPrimed.getSource());
-            }
-        }
-        if(damageSource == null) {
-            return;
-        }
-        EntityPlayer defenseEP = ((CraftPlayer) defense).getHandle();
-
-        class Damage implements Runnable {
-            EntityPlayer defenseEP;
-            DamageSource damageSource;
-            double damage;
-
-            public Damage(EntityPlayer defenseEP, DamageSource damageSource, double damage) {
-                super();
-                this.defenseEP = defenseEP;
-                this.damageSource = damageSource;
-                this.damage = damage;
-            }
-
-            @Override
-            public void run() {
-                defenseEP.damageEntity(damageSource, (float) damage);
-            }
-
-        }
-
-        Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(SpaceWar.War,
-                new Damage(defenseEP, damageSource, damage), 0);
-                */
-
         target.damage(eve.getDamage(), attacker);
-        eve.setCancelled(true);
     }
 
 	// 虛擬NPC清除噴裝
@@ -300,9 +283,20 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         }
 
         Entity damager = eve.getDamager();
-        if(damager.getType() == EntityType.FIREBALL &&
-                ((Projectile) damager).getShooter() instanceof Player)
-            eve.setDamage(Structure.getDamage());
+        Entity target = eve.getEntity();
+        if(damager.getType() == EntityType.FIREBALL) {
+            ProjectileSource shooter = ((Projectile) damager).getShooter();
+
+            if(shooter instanceof Player) {
+                if(teams.containsKey(shooter) && teams.get(shooter).equals(teams.get(target))) {
+                    eve.setCancelled(true);
+                } else {
+                    eve.setDamage(Structure.getDamage());
+                }
+            }
+        } else if(teams.containsKey(damager) && teams.get(damager).equals(teams.get(target))) {
+            eve.setCancelled(true);
+        }
     }
 
     private void addSpawn(Location pos, String team) {

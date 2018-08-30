@@ -16,6 +16,8 @@ commands:
                 addcannon 新增砲點
                 undocannon 移除上一個砲點
                 clearcannon 清除所有砲點
+                setteam <player> <team> 將玩家加入隊伍
+                resetteam 重置隊伍
         permission: cannon.set
 permissions:
     cannon.set:
