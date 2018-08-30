@@ -2,7 +2,7 @@ playerPos:
     ==: org.bukkit.Location
     world: world
     x: 0.0
-    y: 3.0
+    y: 4.0
     z: 0.0
     pitch: 0.0
     yaw: 0.0
@@ -10,8 +10,8 @@ firePos:
     ==: org.bukkit.Location
     world: world
     x: 0.0
-    y: 3.0
-    z: 4.0
+    y: 2.0
+    z: 3.0
     pitch: 0.0
     yaw: 0.0
 cooldown: 1
@@ -26,8 +26,8 @@ blocks:
             z: 0.0
             pitch: 0.0
             yaw: 0.0
-        type: "LEAVES"
-    -
+        type: "WOOL"
+        data: 13
     -
         ==: tw.mayortw.cannon.BlockInfo
         pos:
@@ -38,7 +38,8 @@ blocks:
             z: 0.0
             pitch: 0.0
             yaw: 0.0
-        type: "LEAVES"
+        type: "WOOL"
+        data: 13
     -
         ==: tw.mayortw.cannon.BlockInfo
         pos:
@@ -49,7 +50,8 @@ blocks:
             z: 0.0
             pitch: 0.0
             yaw: 0.0
-        type: "LEAVES"
+        type: "WOOL"
+        data: 13
     -
         ==: tw.mayortw.cannon.BlockInfo
         pos:
@@ -60,7 +62,8 @@ blocks:
             z: 1.0
             pitch: 0.0
             yaw: 0.0
-        type: "LEAVES"
+        type: "WOOL"
+        data: 13
     -
         ==: tw.mayortw.cannon.BlockInfo
         pos:
@@ -72,6 +75,7 @@ blocks:
             pitch: 0.0
             yaw: 0.0
         type: "WOOL"
+        data: 0
     -
         ==: tw.mayortw.cannon.BlockInfo
         pos:
@@ -82,7 +86,7 @@ blocks:
             z: 2.0
             pitch: 0.0
             yaw: 0.0
-        type: "WOOL"
+        type: "HUGE_MUSHROOM_2"
         data: 14
     -
         ==: tw.mayortw.cannon.BlockInfo
@@ -94,7 +98,7 @@ blocks:
             z: 2.0
             pitch: 0.0
             yaw: 0.0
-        type: "WOOL"
+        type: "HUGE_MUSHROOM_2"
         data: 14
     -
         ==: tw.mayortw.cannon.BlockInfo
@@ -106,7 +110,7 @@ blocks:
             z: 2.0
             pitch: 0.0
             yaw: 0.0
-        type: "WOOL"
+        type: "HUGE_MUSHROOM_2"
         data: 14
     -
         ==: tw.mayortw.cannon.BlockInfo
@@ -118,5 +122,5 @@ blocks:
             z: 2.0
             pitch: 0.0
             yaw: 0.0
-        type: "WOOL"
+        type: "HUGE_MUSHROOM_2"
         data: 14

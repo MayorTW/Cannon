@@ -6,12 +6,15 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.LargeFireball;
 import org.bukkit.entity.Fireball;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.PacketPlayOutHeldItemSlot;
@@ -62,11 +65,13 @@ public class Cannon implements ConfigurationSerializable {
 
         this.player = player;
         Bukkit.getOnlinePlayers().forEach(p -> p.hidePlayer(player));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 999999, 1, false, false));
         player.sendMessage(ChatColor.GOLD.toString() + ChatColor.BOLD + "劍為射擊、鞋子為離開");
         player.setAllowFlight(true);
         player.setFlying(true);
-        player.teleport(Structure.getPlayerPos(pos)
-                .setDirection(player.getLocation().getDirection()));
+        Vector dir = player.getLocation().getDirection();
+        player.teleport(Structure.getPlayerPos(pos, dir)
+                .setDirection(dir));
         BukkitManager.sendPacket(player, new PacketPlayOutHeldItemSlot(0));
         PlayerInventory inv = player.getInventory();
         this.inv.clear();
@@ -89,6 +94,7 @@ public class Cannon implements ConfigurationSerializable {
         if(player == null) return;
         player.setAllowFlight(false);
         player.setFlying(false);
+        player.removePotionEffect(PotionEffectType.INVISIBILITY);
         Bukkit.getOnlinePlayers().forEach(p -> p.showPlayer(player));
         PlayerInventory inv = player.getInventory();
         for (int i = 0; i < 36; i++) {
@@ -107,9 +113,14 @@ public class Cannon implements ConfigurationSerializable {
     public void fire() {
         long now = System.currentTimeMillis();
         if(now - lastFired > Structure.getCooldown() * 1000) {
+            Location from = Structure.getFirePos(pos, lastDir);
+            Location to = player.getTargetBlock(null, 150).getLocation();
+            Vector toward = to.distanceSquared(from) > 9 ?
+                to.toVector().subtract(from.toVector()).normalize() :
+                lastDir;
             Fireball fireball = player.getWorld().spawn(
-                    Structure.getFirePos(pos, lastDir), Fireball.class,
-                    f -> f.setDirection(lastDir));
+                    Structure.getFirePos(pos, lastDir), LargeFireball.class,
+                    f -> f.setDirection(toward));
             fireball.setShooter(player);
 
             lastFired = now;
@@ -117,8 +128,22 @@ public class Cannon implements ConfigurationSerializable {
     }
 
     public void updateStructure() {
-        Vector dir = player.getEyeLocation().getDirection();
+        Vector dir = player.getLocation().getDirection();
 
+        // Move player
+        Location to = Structure.getPlayerPos(pos, dir).setDirection(dir);
+        double dist = to.distanceSquared(player.getLocation());
+        if(dist > 0) {
+            Vector toward = to.toVector().subtract(player.getLocation().toVector()).normalize().multiply(Math.min(dist, .5));
+            if(Math.abs(toward.angle(lastDir)) < .3)
+                player.teleport(to);
+            else
+                player.setVelocity(toward);
+        } else {
+            player.setVelocity(new Vector());
+        }
+
+        // Update structure
         Structure.clearBlocks(pos, lastDir);
         Structure.setBlocks(pos, dir);
 

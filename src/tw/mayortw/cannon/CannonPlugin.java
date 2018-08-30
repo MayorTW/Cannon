@@ -165,13 +165,14 @@ public class CannonPlugin extends JavaPlugin implements Listener {
             if(cannon != null) {
                 Location from = eve.getFrom();
                 Location to = eve.getTo();
+                /*
                 if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
                     player.setAllowFlight(true);
                     player.setFlying(true);
                     eve.setCancelled(true);
-                } else {
-                    cannon.updateStructure();
                 }
+                */
+                cannon.updateStructure();
             }
         }
     }

@@ -68,8 +68,8 @@ public class Structure {
         }
     }
 
-    public static Location getPlayerPos(Location pos) {
-        return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5), playerPos.clone());
+    public static Location getPlayerPos(Location pos, Vector dir) {
+        return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5).setDirection(dir), playerPos.clone());
     }
 
     public static Location getFirePos(Location pos, Vector dir) {
