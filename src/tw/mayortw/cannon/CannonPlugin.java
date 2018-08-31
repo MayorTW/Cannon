@@ -259,6 +259,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         if(cannon != null) {
             cannon.deactivate(true);
             eve.getDrops().clear();
+            eve.setDeathMessage(player.getName() + "被 " + player.getKiller().getName() + " 榨死了");
         }
     }
 
