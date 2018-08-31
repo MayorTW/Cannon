@@ -277,14 +277,12 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
         eve.setCancelled(true);
 
-        if(teams.containsKey(attacker) &&
-                teams.get(attacker).equals(teams.get(target)))
-            return;
+        if(canDamage(attacker, target)) {
+            NPC npc = eve.getNPC();
+            BukkitManager.broadcastEntityEffect(npc.getEntity(), 2);
 
-        NPC npc = eve.getNPC();
-        BukkitManager.broadcastEntityEffect(npc.getEntity(), 2);
-
-        target.damage(eve.getDamage(), attacker);
+            target.damage(eve.getDamage(), attacker);
+        }
     }
 
 	// 虛擬NPC清除噴裝
@@ -307,14 +305,14 @@ public class CannonPlugin extends JavaPlugin implements Listener {
             ProjectileSource shooter = ((Projectile) damager).getShooter();
 
             if(shooter instanceof Player) {
-                if(teams.containsKey(shooter) && teams.get(shooter).equals(teams.get(target))) {
+                if(canDamage((Player) shooter, target)) {
+                    eve.setDamage(Structure.getDamage());
+                } else {
                     // Ignore same-team damage
                     eve.setCancelled(true);
-                } else {
-                    eve.setDamage(Structure.getDamage());
                 }
             }
-        } else if(teams.containsKey(damager) && teams.get(damager).equals(teams.get(target))) {
+        } else if(!canDamage(damager, target)) {
             // Ignore same-team damage
             eve.setCancelled(true);
         }
@@ -338,5 +336,10 @@ public class CannonPlugin extends JavaPlugin implements Listener {
     private Cannon undoCannon() {
         return cannons == null || cannons.isEmpty() ?  null :
             cannons.remove(cannons.size() - 1);
+    }
+
+    private boolean canDamage(Entity damager, Entity target) {
+        return !damager.equals(target) &&
+            !(teams.containsKey(damager) && teams.get(damager).equals(teams.get(target)));
     }
 }
