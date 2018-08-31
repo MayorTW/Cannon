@@ -227,6 +227,8 @@ public class Cannon implements ConfigurationSerializable {
     // Remove old structure
     // Build new structure
     public void updateStructure() {
+        if(player == null) return;
+
         Vector dir = player.getLocation().getDirection();
 
         // Move player
@@ -241,6 +243,8 @@ public class Cannon implements ConfigurationSerializable {
         } else {
             player.setVelocity(new Vector());
         }
+        player.setAllowFlight(true);
+        player.setFlying(true);
 
         // Update structure
         Structure.clearBlocks(pos, lastDir);
