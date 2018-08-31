@@ -280,7 +280,10 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
         if(canDamage(attacker, target)) {
             NPC npc = eve.getNPC();
+            Location npcPos = npc.getStoredLocation();
+
             BukkitManager.broadcastEntityEffect(npc.getEntity(), 2);
+            npcPos.getWorld().playSound(npcPos, org.bukkit.Sound.ENTITY_PLAYER_HURT, 1, 1);
 
             target.damage(eve.getDamage(), attacker);
         }
