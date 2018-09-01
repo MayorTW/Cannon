@@ -52,8 +52,6 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
     public static JavaPlugin plugin;
 
-    // Add player to team when they get into this range of the spawn
-    private static final int SPAWN_RANGE = 3;
     private static final String CLEAR_TEAM = "_clear_"; // Config key to save team reset location
 
     private Map<CommandSender, String> spawnSettingPlayers = new HashMap<>();
@@ -63,7 +61,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
     private ConfigurationSection spawns;
 
     private Map<Player, String> teams = new HashMap<>();
-	private List<Player> hasNPCAttack = new ArrayList<>();
+    private List<Player> hasNPCAttack = new ArrayList<>();
 
     private NPCRegistry npcRegistry;
 
@@ -122,6 +120,16 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                         sender.sendMessage("找不到 " + args[1] + " 隊出生點");
                     }
                     break;
+                case "spawnradius":
+                    if(args.length < 2) return false;
+                    try {
+                        double radius = Double.parseDouble(args[1]);
+                        getConfig().set("spawn_radius", radius);
+                        sender.sendMessage("出生點範圍設成 " + radius);
+                    } catch(NumberFormatException e) {
+                        sender.sendMessage(args[1] + " 不是有效的數字");
+                    }
+                    break;
                 case "clearspawn":
                     getConfig().set("spawns", null);
                     sender.sendMessage("清除所有出生點");
@@ -150,7 +158,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                     Player player = Bukkit.getPlayer(args[1]);
                     if(player != null) {
                         teams.put(player, args[2]);
-                        sender.sendMessage(player.getName() + " 已加入 " + args[2] + " 隊");
+                        sender.sendMessage("將 " + player.getName() + " 加入 " + args[2] + " 隊");
                     }
                     break;
                 case "resetteam":
@@ -229,19 +237,20 @@ public class CannonPlugin extends JavaPlugin implements Listener {
             }
         }
 
+        double spawnRadius = getConfig().getDouble("spawn_radius", 3.0);
         if(!teams.containsKey(player)) {
             // Add player to team
             for(String team : spawns.getKeys(false)) {
                 if(team.equals(CLEAR_TEAM)) continue;
                 Location spawn = (Location) spawns.get(team);
-                if(spawn.distanceSquared(player.getLocation()) < SPAWN_RANGE * SPAWN_RANGE) {
+                if(spawn.distanceSquared(player.getLocation()) < spawnRadius * spawnRadius) {
                     teams.put(player, team);
                 }
             }
         } else if(spawns.contains(CLEAR_TEAM)) {
             // Remove player from team
             Location clearPos = (Location) spawns.get(CLEAR_TEAM);
-            if(clearPos.distanceSquared(player.getLocation()) < SPAWN_RANGE * SPAWN_RANGE) {
+            if(clearPos.distanceSquared(player.getLocation()) < spawnRadius * spawnRadius) {
                 teams.remove(player);
             }
         }
@@ -273,7 +282,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         }
     }
 
-	// 虛擬NPC清除噴裝
+    // 虛擬NPC清除噴裝
     @EventHandler
     public void onNPCDeath(NPCDeathEvent eve) {
         eve.getDrops().clear();

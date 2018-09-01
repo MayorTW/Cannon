@@ -12,6 +12,7 @@ commands:
             cmd:
                 setspawn <team> 設定隊伍的出生點
                 removespawn <team> 移除隊伍的出生點
+                spawnradius <radius> 設定出生點範圍
                 clearspawn 清除所有隊伍的出生點
                 addcannon 新增砲點
                 undocannon 移除上一個砲點
