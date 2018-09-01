@@ -23,6 +23,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -32,7 +33,8 @@ import org.bukkit.Location;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.projectiles.ProjectileSource;
 
-import net.citizensnpcs.api.event.NPCDamageByEntityEvent;
+import net.citizensnpcs.api.CitizensAPI;
+import net.citizensnpcs.api.npc.NPCRegistry;
 import net.citizensnpcs.api.event.NPCDeathEvent;
 import net.citizensnpcs.api.npc.NPC;
 
@@ -61,6 +63,9 @@ public class CannonPlugin extends JavaPlugin implements Listener {
     private ConfigurationSection spawns;
 
     private Map<Player, String> teams = new HashMap<>();
+	private List<Player> hasNPCAttack = new ArrayList<>();
+
+    private NPCRegistry npcRegistry;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -83,6 +88,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         CannonPlugin.plugin = this;
         spawns = getConfig().getConfigurationSection("spawns");
         cannons = (List<Cannon>) getConfig().getList("cannons");
+        npcRegistry = CitizensAPI.getNPCRegistry();
     }
 
     @Override
@@ -259,33 +265,11 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         if(cannon != null) {
             cannon.deactivate(true);
             eve.getDrops().clear();
-            eve.setDeathMessage(player.getName() + "被 " + player.getKiller().getName() + " 榨死了");
         }
-    }
 
-	// 虛擬NPC操受到傷害轉移到其他玩家身上
-    @EventHandler
-    public void onNPCDamageByEntity(NPCDamageByEntityEvent eve) {
-        if(!eve.getNPC().data().has("Target")) return;
-
-        UUID uuid = (UUID) eve.getNPC().data().get("Target");
-        Player target = Bukkit.getPlayer(uuid);
-
-        if(target == null || !target.isOnline()) return;
-
-        Entity attacker = BukkitManager.getDamager(eve.getDamager());
-        if(attacker == null) return;
-
-        eve.setCancelled(true);
-
-        if(canDamage(attacker, target)) {
-            NPC npc = eve.getNPC();
-            Location npcPos = npc.getStoredLocation();
-
-            BukkitManager.broadcastEntityEffect(npc.getEntity(), 2);
-            npcPos.getWorld().playSound(npcPos, org.bukkit.Sound.ENTITY_PLAYER_HURT, 1, 1);
-
-            target.damage(eve.getDamage(), attacker);
+        Entity killer = player.getKiller();
+        if(cannons.stream().filter(c -> killer.equals(c.getPlayer())).findFirst().orElse(null) != null) {
+            eve.setDeathMessage(player.getName() + " 被 " + killer.getName() + " 炸死了");
         }
     }
 
@@ -304,20 +288,56 @@ public class CannonPlugin extends JavaPlugin implements Listener {
 
         Entity damager = eve.getDamager();
         Entity target = eve.getEntity();
+
+        if(cannons.stream().filter(c -> target.equals(c.getPlayer())).findFirst().orElse(null) != null) {
+            if(!hasNPCAttack.contains(target)) {
+                eve.setCancelled(true);
+            } else {
+                hasNPCAttack.remove(target);
+            }
+            return;
+        }
+
         if(damager.getType() == EntityType.FIREBALL) {
             // Cannon damage
             ProjectileSource shooter = ((Projectile) damager).getShooter();
-
             if(shooter instanceof Player) {
-                if(canDamage((Player) shooter, target)) {
+                if(canDamage((Player) shooter, target) &&
+                        eve.getCause() == DamageCause.ENTITY_EXPLOSION) {
+                    // Only take explosion damage from fireball
                     eve.setDamage(Structure.getDamage());
                 } else {
                     // Ignore same-team damage
                     eve.setCancelled(true);
+                    return;
                 }
             }
         } else if(!canDamage(damager, target)) {
             // Ignore same-team damage
+            eve.setCancelled(true);
+            return;
+        }
+
+        // When attacking NPC, transfer all damage to target player
+        if(npcRegistry.isNPC(target)) {
+            NPC npc = npcRegistry.getNPC(target);
+            if(!npc.data().has("Target")) return;
+
+            UUID uuid = (UUID) npc.data().get("Target");
+            Player owner = Bukkit.getPlayer(uuid);
+            damager = BukkitManager.getDamager(damager);
+
+            if(owner == null || !owner.isOnline()) return;
+
+            if(canDamage(damager, owner)) {
+                Location npcPos = npc.getStoredLocation();
+
+                BukkitManager.broadcastEntityEffect(npc.getEntity(), 2);
+                npcPos.getWorld().playSound(npcPos, org.bukkit.Sound.ENTITY_PLAYER_HURT, 1, 1);
+
+                hasNPCAttack.add(owner);
+                owner.damage(eve.getDamage(), damager);
+            }
             eve.setCancelled(true);
         }
     }
