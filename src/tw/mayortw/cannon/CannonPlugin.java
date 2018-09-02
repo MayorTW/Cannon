@@ -85,7 +85,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         Structure.init(this);
         CannonPlugin.plugin = this;
         spawns = getConfig().getConfigurationSection("spawns");
-        cannons = (List<Cannon>) getConfig().getList("cannons");
+        cannons = (List<Cannon>) getConfig().getList("cannons", new ArrayList<>());
         npcRegistry = CitizensAPI.getNPCRegistry();
     }
 
@@ -230,28 +230,28 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         Player player = eve.getPlayer();
 
         // Update cannon structure if player's on one
-        if(cannons != null) {
-            Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
-            if(cannon != null) {
-                cannon.updateStructure();
-            }
+        Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
+        if(cannon != null) {
+            cannon.updateStructure();
         }
 
         double spawnRadius = getConfig().getDouble("spawn_radius", 3.0);
-        if(!teams.containsKey(player)) {
-            // Add player to team
-            for(String team : spawns.getKeys(false)) {
-                if(team.equals(CLEAR_TEAM)) continue;
-                Location spawn = (Location) spawns.get(team);
-                if(spawn.distanceSquared(player.getLocation()) < spawnRadius * spawnRadius) {
-                    teams.put(player, team);
+        if(spawns != null) {
+            if(!teams.containsKey(player)) {
+                // Add player to team
+                for(String team : spawns.getKeys(false)) {
+                    if(team.equals(CLEAR_TEAM)) continue;
+                    Location spawn = (Location) spawns.get(team);
+                    if(spawn.distanceSquared(player.getLocation()) < spawnRadius * spawnRadius) {
+                        teams.put(player, team);
+                    }
                 }
-            }
-        } else if(spawns.contains(CLEAR_TEAM)) {
-            // Remove player from team
-            Location clearPos = (Location) spawns.get(CLEAR_TEAM);
-            if(clearPos.distanceSquared(player.getLocation()) < spawnRadius * spawnRadius) {
-                teams.remove(player);
+            } else if(spawns.contains(CLEAR_TEAM)) {
+                // Remove player from team
+                Location clearPos = (Location) spawns.get(CLEAR_TEAM);
+                if(clearPos.distanceSquared(player.getLocation()) < spawnRadius * spawnRadius) {
+                    teams.remove(player);
+                }
             }
         }
     }
