@@ -141,6 +141,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                     break;
                 case "clearcannon":
                     getConfig().set("cannons", null);
+                    cannons.clear();
                     sender.sendMessage("清除所有砲點");
                     break;
                 case "undocannon":
@@ -359,8 +360,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
     }
 
     private void addCannon(Cannon cannon) {
-        if(cannons == null) {
-            cannons = new ArrayList<>();
+        if(cannons.size() == 0) {
             getConfig().set("cannons", cannons);
         }
         cannons.add(cannon);
