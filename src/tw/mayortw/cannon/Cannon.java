@@ -7,6 +7,7 @@
 package tw.mayortw.cannon;
 
 import tw.mayortw.cannon.util.BukkitManager;
+import tw.mayortw.cannon.util.LocationManager;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -55,7 +56,7 @@ public class Cannon implements ConfigurationSerializable {
     private Map<Integer, ItemStack> inv = new HashMap<>();
 
     private Location pos;
-    private Vector lastDir;
+    private float lastAngle;
     private long lastFired = 0;
 
     // Getters and setters
@@ -125,10 +126,13 @@ public class Cannon implements ConfigurationSerializable {
         inv.setItem(8, exitItem);
 
         // Move player
-        player.teleport(Structure.getPlayerPos(pos, dir)
+        float angle = LocationManager.toAngle(dir);
+        player.teleport(Structure.getPlayerPos(pos, angle)
                 .setDirection(dir));
         player.setAllowFlight(true);
         player.setFlying(true);
+
+        lastAngle = angle;
 
         // Build structure
         updateStructure();
@@ -196,24 +200,24 @@ public class Cannon implements ConfigurationSerializable {
         }
 
         // Remove cannon structure
-        Structure.clearBlocks(pos, lastDir);
+        Structure.clearBlocks(pos, lastAngle);
 
         player = null;
         npc = null;
-        lastDir = null;
+        lastAngle = 0;
     }
 
     public void fire() {
         long now = System.currentTimeMillis();
         if(now - lastFired > Structure.getCooldown() * 1000) {
-            Location from = Structure.getFirePos(pos, lastDir);
+            Location from = Structure.getFirePos(pos, lastAngle);
             // Aim at where the player's looking at
             Location to = player.getTargetBlock(null, 150).getLocation();
             Vector toward = to.distanceSquared(from) > 9 ?
                 to.toVector().subtract(from.toVector()).normalize() :
-                lastDir;
+                player.getLocation().getDirection();
             Fireball fireball = player.getWorld().spawn(
-                    Structure.getFirePos(pos, lastDir), LargeFireball.class,
+                    Structure.getFirePos(pos, lastAngle), LargeFireball.class,
                     f -> f.setDirection(toward));
             fireball.setShooter(player);
             fireball.setYield(3);
@@ -230,13 +234,14 @@ public class Cannon implements ConfigurationSerializable {
         if(player == null) return;
 
         Vector dir = player.getLocation().getDirection();
+        float angle = LocationManager.toAngle(dir);
 
         // Move player
-        Location to = Structure.getPlayerPos(pos, dir).setDirection(dir);
+        Location to = Structure.getPlayerPos(pos, angle).setDirection(dir);
         double dist = to.distanceSquared(player.getLocation());
         if(dist > 0) {
             Vector toward = to.toVector().subtract(player.getLocation().toVector()).normalize().multiply(Math.min(dist, .5));
-            if(Math.abs(toward.angle(lastDir)) < .3)
+            if(Math.abs(LocationManager.toAngle(toward) - lastAngle) < .3)
                 player.teleport(to);
             else
                 player.setVelocity(toward);
@@ -247,10 +252,10 @@ public class Cannon implements ConfigurationSerializable {
         player.setFlying(true);
 
         // Update structure
-        Structure.clearBlocks(pos, lastDir);
-        Structure.setBlocks(pos, dir);
+        Structure.clearBlocks(pos, lastAngle);
+        Structure.setBlocks(pos, angle);
 
-        lastDir = dir;
+        lastAngle = angle;
     }
 
     // Serialization

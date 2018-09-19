@@ -27,8 +27,9 @@ import java.util.Map;
 public class Structure {
 
     public static final String FILE_PATH = "cannon.yml";
+    private static final float SNAP_TO = (float) Math.PI / 4; // 8 snaps around the whole circle
 
-    private static List<BlockInfo> blocks = new ArrayList<>();
+    private static Map<String, List<BlockInfo>> structs = new HashMap<>();
     private static Location playerPos;
     private static Location firePos;
     private static int cooldown;
@@ -51,19 +52,26 @@ public class Structure {
         damage = data.getInt("damage");
 
         // Load blocks
-        @SuppressWarnings("unchecked")
-        List<BlockInfo> blockInfo = (List<BlockInfo>) data.getList("blocks");
-        if(blockInfo != null) {
-            for(BlockInfo block : blockInfo) {
-                if(block != null)
-                    blocks.add(block);
+        for(String type : new String[] {"straight", "angled"}) {
+            @SuppressWarnings("unchecked")
+            List<BlockInfo> blockInfo = (List<BlockInfo>) data.getList("blocks_" + type);
+            // Straight blocks
+            List<BlockInfo> blocks = new ArrayList<>();
+            if(blockInfo != null) {
+                for(BlockInfo block : blockInfo) {
+                    if(block != null)
+                        blocks.add(block);
+                }
             }
+            structs.put(type, blocks);
         }
     }
 
-    public static void setBlocks(Location pos, Vector dir/*, Player hideFrom*/) {
+    public static void setBlocks(Location pos, float angle/*, Player hideFrom*/) {
+        angle = snappedAngle(angle);
+        List<BlockInfo> blocks = structs.get(angle % (SNAP_TO * 2) == 0 ? "straight" : "angled");
         for(BlockInfo block : blocks) {
-            Location to = pos.clone().add(.5, 0, .5).setDirection(dir);
+            Location to = pos.clone().add(.5, 0, .5).setDirection(LocationManager.toVector(angle));
             block.setBlock(to);
             /*
             if(hideFrom != null)
@@ -72,20 +80,23 @@ public class Structure {
         }
     }
 
-    public static void clearBlocks(Location pos, Vector dir) {
-        if(dir == null) return;
+    public static void clearBlocks(Location pos, float angle) {
+        angle = snappedAngle(angle);
+        List<BlockInfo> blocks = structs.get(angle % SNAP_TO * 2 == 0 ? "straight" : "angled");
         for(BlockInfo block : blocks) {
-            block.clearBlock(pos.clone().add(.5, 0, .5).setDirection(dir));
+            block.clearBlock(pos.clone().add(.5, 0, .5).setDirection(LocationManager.toVector(angle)));
         }
     }
 
     // Setters and getters
-    public static Location getPlayerPos(Location pos, Vector dir) {
-        return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5).setDirection(dir), playerPos.clone());
+    public static Location getPlayerPos(Location pos, float angle) {
+        angle = snappedAngle(angle);
+        return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5).setDirection(LocationManager.toVector(angle)), playerPos.clone());
     }
 
-    public static Location getFirePos(Location pos, Vector dir) {
-        return LocationManager.getGlobalPos(pos.clone().add(.5, .5, .5).setDirection(dir), firePos.clone());
+    public static Location getFirePos(Location pos, float angle) {
+        angle = snappedAngle(angle);
+        return LocationManager.getGlobalPos(pos.clone().add(.5, .5, .5).setDirection(LocationManager.toVector(angle)), firePos.clone());
     }
 
     public static int getCooldown() {
@@ -94,5 +105,10 @@ public class Structure {
 
     public static int getDamage() {
         return damage;
+    }
+
+    // Return angle thats snapped to multiples of SNAP_TO
+    private static float snappedAngle(float angle) {
+        return (float) Math.round(angle / SNAP_TO) * SNAP_TO;
     }
 }

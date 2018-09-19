@@ -10,20 +10,20 @@ import org.bukkit.util.Vector;
 
 public class LocationManager {
 
-	public static String toString(Location loc) {
-		if(loc == null){
-			return "None";
-		}
-		return String.format("[%s: %d, %d, %d]", loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
-	}
+    public static String toString(Location loc) {
+        if(loc == null){
+            return "None";
+        }
+        return String.format("[%s: %d, %d, %d]", loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+    }
 
-	public static Vector getVectorBetween(Location to, Location from) {
-		Vector dir = new Vector();		
-		dir.setX(to.getX() - from.getX());
-		dir.setY(to.getY() - from.getY());
-		dir.setZ(to.getZ() - from.getZ());	
-		return dir;
-	}
+    public static Vector getVectorBetween(Location to, Location from) {
+        Vector dir = new Vector();
+        dir.setX(to.getX() - from.getX());
+        dir.setY(to.getY() - from.getY());
+        dir.setZ(to.getZ() - from.getZ());
+        return dir;
+    }
 
     // Global position relative to pos 1 on the xz plane
     public static Location getGlobalPos(Location pos1, Location pos2) {
@@ -45,5 +45,13 @@ public class LocationManager {
         double y = loc2.getY() - loc1.getY();
 
         return new Location(loc1.getWorld(), x, y, z, loc2.getYaw() - loc1.getYaw(), loc2.getPitch());
+    }
+
+    public static float toAngle(Vector v) {
+        return (float) Math.atan2(v.getZ(), v.getX());
+    }
+
+    public static Vector toVector(float angle) {
+        return new Vector(Math.cos(angle), 0, Math.sin(angle));
     }
 }
