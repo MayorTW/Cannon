@@ -132,6 +132,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                     break;
                 case "clearspawn":
                     getConfig().set("spawns", null);
+                    spawns = null;
                     sender.sendMessage("清除所有出生點");
                     break;
                 case "addcannon":
