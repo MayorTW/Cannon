@@ -1,6 +1,6 @@
 name: "Cannon"
 main: tw.mayortw.cannon.CannonPlugin
-version: 0.2.3
+version: 0.2.5
 description: "大砲"
 author: "R26"
 depend:
