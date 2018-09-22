@@ -82,7 +82,7 @@ public class Structure {
 
     public static void clearBlocks(Location pos, float angle) {
         angle = snappedAngle(angle);
-        List<BlockInfo> blocks = structs.get(angle % SNAP_TO * 2 == 0 ? "straight" : "angled");
+        List<BlockInfo> blocks = structs.get(angle % (SNAP_TO * 2) == 0 ? "straight" : "angled");
         for(BlockInfo block : blocks) {
             block.clearBlock(pos.clone().add(.5, 0, .5).setDirection(LocationManager.toVector(angle)));
         }
