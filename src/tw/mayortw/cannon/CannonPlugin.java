@@ -290,11 +290,12 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
         if(cannon != null) {
             cannon.deactivate(false);
-            eve.getDrops().clear();
         }
 
         Entity killer = player.getKiller();
-        if(cannons.stream().filter(c -> killer.equals(c.getPlayer())).findFirst().orElse(null) != null) {
+        if(killer != null &&
+                cannons.stream().filter(c -> killer.equals(c.getPlayer()))
+                .findFirst().orElse(null) != null) {
             eve.setDeathMessage(player.getName() + " 被 " + killer.getName() + " 炸死了");
         }
     }
