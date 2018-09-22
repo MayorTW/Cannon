@@ -27,6 +27,7 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.Location;
@@ -193,7 +194,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                     return;
                 } else if(Cannon.exitItem.equals(itemInHand)) {
                     // Exit cannon
-                    cannon.deactivate(false);
+                    cannon.deactivate(true);
                     eve.setCancelled(true);
                     return;
                 }
@@ -223,6 +224,20 @@ public class CannonPlugin extends JavaPlugin implements Listener {
                     cannon.activate(player);
                     eve.setCancelled(true);
                 }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerTeleport(PlayerTeleportEvent eve) {
+        Player player = eve.getPlayer();
+
+        // Deactivate cannon if player teleported too far
+        // Use TeleportCause.UNKNOWN to identify if it's caused by this plugin
+        if(eve.getCause() != PlayerTeleportEvent.TeleportCause.UNKNOWN) {
+            Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
+            if(cannon != null) {
+                cannon.deactivate(false);
             }
         }
     }
@@ -264,17 +279,17 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         Player player = eve.getPlayer();
         Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
         if(cannon != null) {
-            cannon.deactivate(false);
+            cannon.deactivate(true);
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler
     public void onPlayerDeath(PlayerDeathEvent eve) {
         // Deactivate cannon when the player controlling dies
         Player player = eve.getEntity();
         Cannon cannon = cannons.stream().filter(c -> player.equals(c.getPlayer())).findFirst().orElse(null);
         if(cannon != null) {
-            cannon.deactivate(true);
+            cannon.deactivate(false);
             eve.getDrops().clear();
         }
 
