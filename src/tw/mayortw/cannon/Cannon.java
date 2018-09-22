@@ -92,12 +92,15 @@ public class Cannon implements ConfigurationSerializable {
         float angle = LocationManager.toAngle(dir);
 
         // Hide player
+        /*
         Bukkit.getOnlinePlayers().forEach(p -> p.hidePlayer(player));
         player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 999999, 1, false, false));
+        */
         player.sendMessage(ChatColor.GOLD.toString() + ChatColor.BOLD + "劍為射擊、鞋子為離開");
 
         PlayerInventory inv = player.getInventory();
 
+        /*
         // Setup NPC clone
         npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, player.getName());
         Location npcPos = Structure.getNPCPos(pos, angle);
@@ -116,6 +119,7 @@ public class Cannon implements ConfigurationSerializable {
         npc.getTrait(Equipment.class).set(EquipmentSlot.OFF_HAND, inv.getItemInOffHand());
         ((Player)npc.getEntity()).setMaxHealth(player.getMaxHealth());
         ((Player)npc.getEntity()).setHealth(player.getHealth());
+        */
 
         // Set player inventory
         BukkitManager.sendPacket(player, new PacketPlayOutHeldItemSlot(0));
@@ -152,9 +156,10 @@ public class Cannon implements ConfigurationSerializable {
         // Unhide and un-fly player
         player.setAllowFlight(false);
         player.setFlying(false);
-        player.removePotionEffect(PotionEffectType.INVISIBILITY);
+        //player.removePotionEffect(PotionEffectType.INVISIBILITY);
         Bukkit.getOnlinePlayers().forEach(p -> p.showPlayer(player));
 
+        /*
         // Class to destroy NPC with scheduler
         class DestroyNPC implements Runnable {
             private NPC npc;
@@ -168,6 +173,8 @@ public class Cannon implements ConfigurationSerializable {
         }
 
         Location npcPos = npc.getStoredLocation();
+        */
+        Location playerPos = player.getLocation();
 
         if(isDie) {
             // Drop items

@@ -300,6 +300,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
         Entity damager = eve.getDamager();
         Entity target = eve.getEntity();
 
+        /*
         if(cannons.stream().filter(c -> target.equals(c.getPlayer())).findFirst().orElse(null) != null) {
             if(!hasNPCAttack.contains(target)) {
                 eve.setCancelled(true);
@@ -308,6 +309,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
             }
             return;
         }
+        */
 
         if(damager.getType() == EntityType.FIREBALL) {
             // Cannon damage
@@ -329,6 +331,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
             return;
         }
 
+        /*
         // When attacking NPC, transfer all damage to target player
         if(npcRegistry.isNPC(target)) {
             NPC npc = npcRegistry.getNPC(target);
@@ -351,6 +354,7 @@ public class CannonPlugin extends JavaPlugin implements Listener {
             }
             eve.setCancelled(true);
         }
+        */
     }
 
     private void addSpawn(Location pos, String team) {
