@@ -6,6 +6,14 @@ playerPos:
     z: 0.0
     pitch: 0.0
     yaw: 0.0
+npcPos:
+    ==: org.bukkit.Location
+    world: world
+    x: 0.0
+    y: 5.0
+    z: 0.0
+    pitch: 0.0
+    yaw: 0.0
 firePos:
     ==: org.bukkit.Location
     world: world
