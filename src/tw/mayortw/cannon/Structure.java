@@ -31,6 +31,7 @@ public class Structure {
 
     private static Map<String, List<BlockInfo>> structs = new HashMap<>();
     private static Location playerPos;
+    private static Location npcPos;
     private static Location firePos;
     private static int cooldown;
     private static int damage;
@@ -47,6 +48,7 @@ public class Structure {
 
         // Load datas
         playerPos = (Location) data.get("playerPos");
+        npcPos = (Location) data.get("npcPos");
         firePos = (Location) data.get("firePos");
         cooldown = data.getInt("cooldown");
         damage = data.getInt("damage");
@@ -92,6 +94,11 @@ public class Structure {
     public static Location getPlayerPos(Location pos, float angle) {
         angle = snappedAngle(angle);
         return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5).setDirection(LocationManager.toVector(angle)), playerPos.clone());
+    }
+
+    public static Location getNPCPos(Location pos, float angle) {
+        angle = snappedAngle(angle);
+        return LocationManager.getGlobalPos(pos.clone().add(.5, 0, .5).setDirection(LocationManager.toVector(angle)), npcPos.clone());
     }
 
     public static Location getFirePos(Location pos, float angle) {

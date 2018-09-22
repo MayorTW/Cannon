@@ -89,6 +89,7 @@ public class Cannon implements ConfigurationSerializable {
         this.player = player;
 
         Vector dir = player.getLocation().getDirection();
+        float angle = LocationManager.toAngle(dir);
 
         // Hide player
         Bukkit.getOnlinePlayers().forEach(p -> p.hidePlayer(player));
@@ -99,7 +100,12 @@ public class Cannon implements ConfigurationSerializable {
 
         // Setup NPC clone
         npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, player.getName());
-        npc.spawn(player.getLocation());
+        Location npcPos = Structure.getNPCPos(pos, angle);
+        if(npcPos != null)
+            npc.spawn(Structure.getNPCPos(pos, angle));
+        else
+            npc.spawn(player.getLocation());
+        player.hidePlayer((Player) npc.getEntity());
         npc.setProtected(false);
         npc.data().set("Target", player.getUniqueId());
         npc.getTrait(Equipment.class).set(EquipmentSlot.HELMET, inv.getHelmet());
@@ -125,8 +131,7 @@ public class Cannon implements ConfigurationSerializable {
         inv.setItem(0, fireItem);
         inv.setItem(8, exitItem);
 
-        // Move player
-        float angle = LocationManager.toAngle(dir);
+        // Move player and NPC
         player.teleport(Structure.getPlayerPos(pos, angle)
                 .setDirection(dir));
         player.setAllowFlight(true);
@@ -237,19 +242,34 @@ public class Cannon implements ConfigurationSerializable {
         float angle = LocationManager.toAngle(dir);
 
         // Move player
-        Location to = Structure.getPlayerPos(pos, angle).setDirection(dir);
-        double dist = to.distanceSquared(player.getLocation());
-        if(dist > 0) {
-            Vector toward = to.toVector().subtract(player.getLocation().toVector()).normalize().multiply(Math.min(dist, .5));
-            if(Math.abs(LocationManager.toAngle(toward) - lastAngle) < .3)
-                player.teleport(to);
-            else
-                player.setVelocity(toward);
-        } else {
-            player.setVelocity(new Vector());
+        {
+            Location to = Structure.getPlayerPos(pos, angle).setDirection(dir);
+            double dist = to.distanceSquared(player.getLocation());
+            if(dist > 0) {
+                Vector toward = to.toVector().subtract(player.getLocation().toVector()).normalize().multiply(dist);
+                if(toward.lengthSquared() > 1) {
+                    player.teleport(to, TeleportCause.UNKNOWN); // Use TeleportCause.UNKNOWN to identify if it's caused by this plugin
+                    player.setVelocity(new Vector());
+                } else {
+                    player.setVelocity(toward);
+                }
+            } else {
+                player.setVelocity(new Vector());
+            }
+            player.setAllowFlight(true);
+            player.setFlying(true);
         }
-        player.setAllowFlight(true);
-        player.setFlying(true);
+
+        /*
+        // Move NPC
+        {
+            Location to = Structure.getNPCPos(pos, angle);
+            double dist = to.distanceSquared(npc.getStoredLocation());
+            if(dist > 0.1) {
+                    npc.teleport(to, null);
+            }
+        }
+        */
 
         // Update structure
         Structure.clearBlocks(pos, lastAngle);
