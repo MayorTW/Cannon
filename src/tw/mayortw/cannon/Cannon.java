@@ -16,6 +16,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.LargeFireball;
 import org.bukkit.entity.Fireball;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.PlayerInventory;
@@ -137,7 +138,7 @@ public class Cannon implements ConfigurationSerializable {
 
         // Move player and NPC
         player.teleport(Structure.getPlayerPos(pos, angle)
-                .setDirection(dir));
+                .setDirection(dir), TeleportCause.UNKNOWN); // Use TeleportCause.UNKNOWN to identify if it's caused by this plugin
         player.setAllowFlight(true);
         player.setFlying(true);
 
@@ -150,7 +151,7 @@ public class Cannon implements ConfigurationSerializable {
     // Deactivate cannon
     //
     @SuppressWarnings("deprecation")
-    public void deactivate(boolean isDie) {
+    public void deactivate(boolean tp) {
         if(player == null) return;
 
         // Unhide and un-fly player
@@ -176,7 +177,8 @@ public class Cannon implements ConfigurationSerializable {
         */
         Location playerPos = player.getLocation();
 
-        if(isDie) {
+        if(!tp) {
+            /*
             // Drop items
             this.inv.forEach((k, v) -> {
                 npcPos.getWorld().dropItem(npcPos, v);
@@ -195,21 +197,27 @@ public class Cannon implements ConfigurationSerializable {
 
             // Destroy NPC later
             Bukkit.getScheduler().runTaskLater(CannonPlugin.plugin, new DestroyNPC(npc), 20);
+            */
         } else {
-            // Give player their inventory back
-            PlayerInventory inv = player.getInventory();
-            for (int i = 0; i < 36; i++) {
-                inv.setItem(i, null);
-            }
-            this.inv.forEach((k, v) -> {
-                inv.setItem(k, v);
-            });
-            this.inv.clear();
-
             // Teleport player to NPC and destroy NPC
-            player.teleport(npcPos);
-            npc.destroy();
+            //player.teleport(npcPos);
+            //npc.destroy();
+
+            player.teleport(pos.clone().add(.5, 1, .5)
+                    .setDirection(playerPos.getDirection()),
+                    TeleportCause.UNKNOWN); // Use TeleportCause.UNKNOWN to identify if it's caused by this plugin
         }
+
+        // Give player their inventory back
+        PlayerInventory inv = player.getInventory();
+        for (int i = 0; i < 36; i++) {
+            inv.setItem(i, null);
+        }
+        this.inv.forEach((k, v) -> {
+            inv.setItem(k, v);
+        });
+        this.inv.clear();
+
 
         // Remove cannon structure
         Structure.clearBlocks(pos, lastAngle);
